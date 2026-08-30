@@ -1,0 +1,23 @@
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-tmp/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.env
+.env.*
+!.env.example
+
+# Relatórios gerados localmente pelo comando scan.
+artifacts/scan/
+artifacts/dataset/
+
+# Dados persistidos quando o volume local for usado fora do Docker.
+.chroma/

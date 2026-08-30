@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tech-challenge.local/schemas/canonical-medical-record-1.1.json",
+  "title": "CanonicalMedicalRecord",
+  "description": "Par médico curado com identidade estável e procedência auditável.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "document_id",
+    "content_sha256",
+    "language",
+    "focus",
+    "category",
+    "question_type",
+    "question",
+    "answer",
+    "synonyms",
+    "umls_cuis",
+    "umls_semantic_types",
+    "umls_semantic_groups",
+    "source",
+    "curation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.1"
+    },
+    "record_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "document_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "language": {
+      "const": "en"
+    },
+    "focus": {
+      "type": ["string", "null"]
+    },
+    "category": {
+      "type": ["string", "null"]
+    },
+    "question_type": {
+      "type": ["string", "null"]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "synonyms": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "umls_cuis": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "umls_semantic_types": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "umls_semantic_groups": {
+      "$ref": "#/$defs/uniqueStrings"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "curation": {
+      "$ref": "#/$defs/curation"
+    }
+  },
+  "$defs": {
+    "uniqueStrings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset",
+        "collection",
+        "relative_path",
+        "upstream_repository",
+        "upstream_revision",
+        "upstream_document_id",
+        "upstream_pair_id",
+        "upstream_question_id",
+        "publisher",
+        "url",
+        "license"
+      ],
+      "properties": {
+        "dataset": {
+          "const": "MedQuAD"
+        },
+        "collection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upstream_repository": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "upstream_revision": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "upstream_document_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "upstream_pair_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "upstream_question_id": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "publisher": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "url": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "license": {
+          "const": "CC-BY-4.0"
+        }
+      }
+    },
+    "curation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "pii_status",
+        "pii_types",
+        "transformations",
+        "quality_flags"
+      ],
+      "properties": {
+        "status": {
+          "const": "accepted"
+        },
+        "pii_status": {
+          "enum": ["not_evaluated", "not_detected", "detected", "redacted"]
+        },
+        "pii_types": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "email_address",
+              "phone_number",
+              "us_ssn",
+              "brazilian_cpf",
+              "medical_record_number",
+              "patient_name",
+              "date_of_birth"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "transformations": {
+          "$ref": "#/$defs/uniqueStrings"
+        },
+        "quality_flags": {
+          "$ref": "#/$defs/uniqueStrings"
+        }
+      }
+    }
+  }
+}
