@@ -38,8 +38,8 @@ perguntas e respostas. O manifesto registra os números efetivamente obtidos.
 | `manifest.json` | Configuração, origem, contagens por split e verificações de vazamento. |
 
 Os JSONL preservam o schema canônico. Eles ainda não usam o formato `messages` de um provedor
-de fine-tuning: essa conversão será responsabilidade do `tech-ai`, sem acoplar a ingestão a um
-modelo ou provedor.
+de fine-tuning: essa conversão será responsabilidade do `tech-fine-tuning`, sem acoplar a
+ingestão a um modelo ou provedor.
 
 ## Invariantes verificadas
 

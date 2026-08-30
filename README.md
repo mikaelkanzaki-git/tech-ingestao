@@ -179,4 +179,4 @@ repositório: sua origem e revisão Git são registradas no relatório de varred
 
 1. Revisar os achados do relatório de PII antes de liberar uma nova versão do dataset;
 2. reindexar o split de treino no ChromaDB quando o conteúdo sanitizado for aprovado;
-3. criar no `tech-ai` o adaptador conversacional e o treinamento com Unsloth.
+3. usar no `tech-fine-tuning` o adaptador conversacional e o treinamento com Unsloth.
