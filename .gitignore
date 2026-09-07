@@ -17,7 +17,7 @@ build/
 
 # Relatórios gerados localmente pelo comando scan.
 artifacts/scan/
-artifacts/dataset/
+artifacts/dataset*/
 
 # Dados persistidos quando o volume local for usado fora do Docker.
 .chroma/

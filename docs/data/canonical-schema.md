@@ -11,8 +11,9 @@ O contrato executável está em
 
 - Cada registro corresponde a um par de pergunta e resposta válido.
 - `record_id` é um UUIDv5 determinístico para identificar o par.
-- `document_id` é compartilhado por todos os pares do mesmo XML e será a chave de agrupamento
-  das divisões de treino, validação e teste. Isso impede vazamento entre pares do mesmo documento.
+- `document_id` é compartilhado por todos os pares do mesmo XML. A divisão mantém o documento
+  indivisível e também conecta documentos que compartilham a mesma pergunta normalizada. Isso
+  impede vazamento entre pares do mesmo documento e entre perguntas equivalentes.
 - `content_sha256` permite detectar conteúdo exatamente duplicado sem usar o ID de origem.
 - A procedência preserva coleção, arquivo, IDs originais, publicador, URL, repositório, revisão e
   licença. Esses campos sustentam atribuição CC BY 4.0 e fontes nas respostas do assistente.
@@ -28,7 +29,7 @@ O contrato executável está em
 | --- | --- |
 | `schema_version` | Permite evoluir o contrato sem misturar formatos incompatíveis. |
 | `record_id` | Identidade estável do par para JSONL, ChromaDB e auditoria. |
-| `document_id` | Unidade indivisível usada para evitar vazamento entre splits. |
+| `document_id` | Unidade indivisível e nó do agrupamento usado nos splits. |
 | `content_sha256` | Identificação de duplicidade exata de pergunta e resposta. |
 | `question`, `answer` | Conteúdo supervisionado para fine-tuning e recuperação. |
 | `focus`, `category`, `question_type` | Contexto temático e clínico. |

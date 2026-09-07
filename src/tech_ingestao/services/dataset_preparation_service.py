@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -99,6 +101,56 @@ def _assign_split(document_id: str, config: SplitConfig) -> SplitName:
     return "test"
 
 
+def _normalize_question(question: str) -> str:
+    normalized = unicodedata.normalize("NFKC", question).casefold()
+    normalized = " ".join(normalized.split())
+    return re.sub(r"\s+([?!.,;:])", r"\1", normalized)
+
+
+def _component_keys(
+    records: tuple[CanonicalMedicalRecord, ...],
+) -> tuple[dict[str, str], int]:
+    """Agrupa documentos conectados por ao menos uma pergunta normalizada."""
+
+    parent = {record.document_id: record.document_id for record in records}
+
+    def find(document_id: str) -> str:
+        root = document_id
+        while parent[root] != root:
+            root = parent[root]
+        while parent[document_id] != document_id:
+            previous = parent[document_id]
+            parent[document_id] = root
+            document_id = previous
+        return root
+
+    def union(left: str, right: str) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root == right_root:
+            return
+        kept, merged = sorted((left_root, right_root))
+        parent[merged] = kept
+
+    first_document_by_question: dict[str, str] = {}
+    for record in sorted(records, key=_record_order):
+        normalized_question = _normalize_question(record.question)
+        first_document = first_document_by_question.setdefault(
+            normalized_question, record.document_id
+        )
+        union(first_document, record.document_id)
+
+    documents_by_root: dict[str, list[str]] = {}
+    for document_id in parent:
+        documents_by_root.setdefault(find(document_id), []).append(document_id)
+    component_key_by_document = {
+        document_id: min(documents)
+        for documents in documents_by_root.values()
+        for document_id in documents
+    }
+    return component_key_by_document, len(documents_by_root)
+
+
 def _overlap_count(*values: set[str]) -> int:
     overlap: set[str] = set()
     for index, left in enumerate(values):
@@ -111,10 +163,15 @@ def _validation_report(splits: dict[SplitName, list[CanonicalMedicalRecord]]) ->
     document_sets = [{record.document_id for record in records} for records in splits.values()]
     record_sets = [{record.record_id for record in records} for records in splits.values()]
     content_sets = [{record.content_sha256 for record in records} for records in splits.values()]
+    question_sets = [
+        {_normalize_question(record.question) for record in records}
+        for records in splits.values()
+    ]
     return {
         "cross_split_document_overlap": _overlap_count(*document_sets),
         "cross_split_record_overlap": _overlap_count(*record_sets),
         "cross_split_content_overlap": _overlap_count(*content_sets),
+        "cross_split_normalized_question_overlap": _overlap_count(*question_sets),
     }
 
 
@@ -186,8 +243,10 @@ def prepare_medquad_dataset(
         "validation": [],
         "test": [],
     }
+    component_keys, component_count = _component_keys(canonical_records)
     for record in canonical_records:
-        splits[_assign_split(record.document_id, split_config)].append(record)
+        split_key = component_keys[record.document_id]
+        splits[_assign_split(split_key, split_config)].append(record)
 
     validation = _validation_report(splits)
     if any(validation.values()):
@@ -207,8 +266,9 @@ def prepare_medquad_dataset(
         },
         "configuration": {
             **split_config.as_dict(),
-            "split_unit": "document_id",
-            "assignment_strategy": "sha256_seeded_document_threshold",
+            "split_unit": "document_question_component",
+            "assignment_strategy": "sha256_seeded_component_threshold",
+            "question_normalization": "unicode_nfkc_casefold_whitespace_punctuation",
             "deduplication_strategy": "content_sha256_keep_first_by_source",
         },
         "summary": {
@@ -217,6 +277,7 @@ def prepare_medquad_dataset(
             "canonical_records": len(canonical_records),
             "exact_duplicates_removed": len(duplicate_removals),
             "documents": len({record.document_id for record in canonical_records}),
+            "split_components": component_count,
             "pii_records_redacted_before_deduplication": pii_audit["records_redacted"],
             "pii_records_redacted": pii_audit["final_records_redacted"],
             "records_by_split": record_counts,
