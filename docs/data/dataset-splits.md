@@ -14,13 +14,17 @@ uv run tech-ingestao prepare
 - Teste: 10%.
 - Seed: `42`.
 - Privacidade: redação determinística antes de calcular `content_sha256`.
-- Unidade indivisível: `document_id`.
+- Unidade indivisível: componente conectado de documentos e perguntas normalizadas.
 - Deduplicação: `content_sha256`, mantendo o primeiro registro pela ordem estável da fonte.
 
-Cada `document_id` recebe um valor determinístico calculado por SHA-256 a partir da seed. O
-valor define seu split por limiares de proporção. Todos os pares daquele documento seguem para
-o mesmo arquivo. Como a atribuição não depende da posição do documento na coleção, adicionar
-novos documentos não movimenta os registros já existentes.
+O serviço conecta documentos quando eles compartilham a mesma pergunta após normalização Unicode,
+diferenças de maiúsculas, espaços e pontuação adjacente. Cada componente recebe um valor
+determinístico calculado por SHA-256 a partir da seed. Todos os pares de um documento e todos os
+documentos conectados por uma pergunta seguem para o mesmo arquivo.
+
+Adicionar um documento isolado não movimenta componentes existentes. Um documento novo que conecte
+componentes antes separados pode alterar a chave do componente unido; o manifesto e os hashes
+registram essa nova divisão.
 
 As proporções são alvos, não contagens exatas: documentos possuem quantidades diferentes de
 perguntas e respostas. O manifesto registra os números efetivamente obtidos.
@@ -48,6 +52,7 @@ O comando falha se detectar qualquer uma destas condições:
 - um `document_id` em mais de um split;
 - um `record_id` em mais de um split;
 - o mesmo `content_sha256` em mais de um split.
+- a mesma pergunta normalizada em mais de um split.
 
 O último item é garantido pela deduplicação global antes da divisão.
 

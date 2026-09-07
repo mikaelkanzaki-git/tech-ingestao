@@ -41,6 +41,7 @@ def test_preparation_deduplicates_and_has_no_cross_split_leakage(tmp_path: Path)
         "cross_split_document_overlap": 0,
         "cross_split_record_overlap": 0,
         "cross_split_content_overlap": 0,
+        "cross_split_normalized_question_overlap": 0,
     }
 
     document_split: dict[str, str] = {}
@@ -52,6 +53,42 @@ def test_preparation_deduplicates_and_has_no_cross_split_leakage(tmp_path: Path)
     for split, records in split_records.items():
         for record in records:
             assert document_split.setdefault(record.document_id, split) == split
+
+
+def test_preparation_keeps_matching_questions_from_different_documents_together(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "MedQuAD" / "1_Example_QA"
+    source.mkdir(parents=True)
+    first = VALID_XML.replace("doc-1", "doc-a")
+    second = (
+        VALID_XML.replace("doc-1", "doc-b")
+        .replace("Fever and fatigue.", "Pain and nausea.")
+        .replace("How is it treated?", "How can it be managed?")
+    )
+    (source / "first.xml").write_text(first, encoding="utf-8")
+    (source / "second.xml").write_text(second, encoding="utf-8")
+
+    prepared = prepare_medquad_dataset(source.parent)
+
+    split_by_record = {
+        record.record_id: split
+        for split, records in {
+            "train": prepared.train_records,
+            "validation": prepared.validation_records,
+            "test": prepared.test_records,
+        }.items()
+        for record in records
+    }
+    symptom_records = [
+        record
+        for record in prepared.canonical_records
+        if record.question == "What are the symptoms?"
+    ]
+    assert len(symptom_records) == 2
+    assert len({split_by_record[record.record_id] for record in symptom_records}) == 1
+    assert prepared.manifest["validation"]["cross_split_normalized_question_overlap"] == 0
+    assert prepared.manifest["configuration"]["split_unit"] == "document_question_component"
 
 
 def test_preparation_is_deterministic_for_same_seed(tmp_path: Path) -> None:

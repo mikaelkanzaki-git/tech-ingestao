@@ -89,7 +89,8 @@ uv run tech-ingestao prepare
 
 O comando gera `canonical.jsonl`, `train.jsonl`, `validation.jsonl`, `test.jsonl`,
 `duplicates.jsonl`, `pii-audit.jsonl` e `manifest.json` em `artifacts/dataset`. A divisão padrão
-é 80/10/10 com seed 42 e nunca separa pares do mesmo documento. A política completa está em
+é 80/10/10 com seed 42, nunca separa pares do mesmo documento e mantém perguntas normalizadas
+equivalentes no mesmo split. A política completa está em
 [`docs/data/dataset-splits.md`](docs/data/dataset-splits.md).
 
 ## Privacidade e anonimização
