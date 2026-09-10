@@ -3,6 +3,22 @@
 O `tech-ingestao` organiza o pipeline por responsabilidade concreta. A estrutura cresce
 conforme novos comportamentos são implementados, sem antecipar camadas vazias.
 
+## Equivalência com Java/Spring
+
+| Java/Spring | Convenção adotada |
+| --- | --- |
+| `src/main/java` | `src/tech_ingestao` |
+| `src/test/java` | `tests/` |
+| `model` / DTO | `models/` |
+| `service` | `services/` |
+| `repository` | `repositories/` |
+| client de API ou SDK | `integrations/<sistema>/` |
+| `@Configuration` | `config/dependencies.py` |
+| `application.yml` | `config/settings.py` e variáveis de ambiente |
+| `Application.java` | `__main__.py` e `runner.py` |
+
+## Estrutura atual
+
 ```text
 src/tech_ingestao/
 ├── config/
@@ -21,14 +37,14 @@ src/tech_ingestao/
 ├── services/
 │   ├── canonicalization_service.py
 │   ├── dataset_preparation_service.py
-│   ├── embedding_service.py
 │   ├── knowledge_index_service.py
 │   └── scan_service.py
 └── integrations/
     ├── chroma/
     │   └── knowledge_repository.py
     ├── embeddings/
-    │   └── openai.py
+    │   ├── client.py
+    │   └── local_onnx.py
     ├── filesystem/
     │   └── report_writer.py
     └── medquad/
@@ -53,8 +69,9 @@ src/tech_ingestao/
   serviço, sem expor o SDK.
 - `integrations/chroma/knowledge_repository.py`: implementa `upsert`, consulta e contagem pelo
   cliente HTTP do ChromaDB.
-- `integrations/embeddings/openai.py`: solicita embeddings explícitos à OpenAI; o banco não
-  conhece a credencial nem o provedor.
+- `integrations/embeddings/client.py`: contrato substituível consumido pelos casos de uso.
+- `integrations/embeddings/local_onnx.py`: executa `all-MiniLM-L6-v2` localmente; o banco não
+  conhece o runtime usado para gerar o vetor.
 - `config/`: valida variáveis de ambiente e compõe as integrações na borda da aplicação.
 
 ## Evolução prevista

@@ -82,7 +82,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     index_parser = subcommands.add_parser(
         "index",
-        help="Gera embeddings pela OpenAI e faz upsert no ChromaDB.",
+        help="Gera embeddings ONNX locais e faz upsert no ChromaDB.",
     )
     index_parser.add_argument(
         "--source",
@@ -117,7 +117,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subcommands.add_parser(
         "chroma-health",
-        help="Valida a conexão com o ChromaDB sem chamar a OpenAI.",
+        help="Valida a conexão com o ChromaDB sem carregar o modelo local.",
     )
     return parser
 

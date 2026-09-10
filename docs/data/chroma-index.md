@@ -1,16 +1,17 @@
 # Índice semântico no ChromaDB
 
-O ChromaDB armazena vetores gerados explicitamente pela OpenAI. A coleção não possui função
-de embedding própria: isso evita configuração duplicada no servidor e deixa a troca de
-provedor restrita à integração de embeddings.
+O ChromaDB armazena vetores gerados localmente pelo modelo ONNX `all-MiniLM-L6-v2`. A coleção
+não possui função de embedding própria: o `tech-ingestao` gera os vetores na escrita e o
+`tech-ai` usa a mesma integração na consulta.
 
 ## Contrato de indexação
 
-- Coleção padrão: `medquad_knowledge_v1`.
+- Coleção padrão: `medquad_knowledge_minilm_v1`.
 - ID do registro: `record_id` canônico; repetir o comando atualiza o mesmo item via `upsert`.
 - Distância: cosseno.
-- Modelo padrão: `text-embedding-3-small`.
-- Dimensão padrão: 1536, fixada por configuração para detectar incompatibilidades cedo.
+- Modelo: `all-MiniLM-L6-v2`, executado localmente por ONNX Runtime.
+- Dimensão: 384, fixada por configuração para detectar incompatibilidades cedo.
+- Normalização: vetores normalizados pelo runtime do modelo.
 - Texto indexado: `focus` quando presente, `question` e `answer`.
 - Metadados: somente valores escalares. Objetos aninhados da procedência são achatados.
 
@@ -25,13 +26,15 @@ projeto não lê nem versiona automaticamente um arquivo `.env`.
 
 | Variável | Padrão | Obrigatória |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | sem padrão | sim para `index` e `search` |
-| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | não |
-| `OPENAI_EMBEDDING_DIMENSIONS` | `1536` | não |
+| `LOCAL_EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | não |
+| `LOCAL_EMBEDDING_DIMENSIONS` | `384` | não |
 | `CHROMA_HOST` | `localhost` | não |
 | `CHROMA_PORT` | `8000` | não |
 | `CHROMA_SSL` | `false` | não |
-| `CHROMA_COLLECTION` | `medquad_knowledge_v1` | não |
+| `CHROMA_COLLECTION` | `medquad_knowledge_minilm_v1` | não |
 
-Alterar modelo ou dimensão exige uma nova coleção. Vetores de dimensões diferentes não podem
-ser consultados na mesma coleção.
+Na primeira indexação, o modelo ONNX é baixado automaticamente para o cache local do ChromaDB.
+Depois disso, a geração dos vetores não precisa de chave nem de chamada a uma API externa.
+
+Alterar modelo ou dimensão exige uma nova coleção. Vetores gerados por modelos diferentes não
+devem ser misturados, mesmo quando possuírem a mesma dimensão.
