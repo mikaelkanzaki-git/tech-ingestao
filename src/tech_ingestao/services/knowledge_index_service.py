@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 
 from tech_ingestao.errors import KnowledgeIndexError
+from tech_ingestao.integrations.embeddings.client import EmbeddingClient
 from tech_ingestao.models.canonical import CanonicalMedicalRecord
 from tech_ingestao.models.knowledge import (
     KnowledgeDocument,
@@ -13,7 +14,6 @@ from tech_ingestao.models.knowledge import (
     MetadataValue,
 )
 from tech_ingestao.repositories.knowledge_repository import KnowledgeRepository
-from tech_ingestao.services.embedding_service import EmbeddingService
 
 
 def _metadata(record: CanonicalMedicalRecord, split: str) -> dict[str, MetadataValue]:
@@ -65,7 +65,7 @@ class KnowledgeIndexService:
 
     def __init__(
         self,
-        embedding_service: EmbeddingService,
+        embedding_service: EmbeddingClient,
         repository: KnowledgeRepository,
     ) -> None:
         self._embedding_service = embedding_service

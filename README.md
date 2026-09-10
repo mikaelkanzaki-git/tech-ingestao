@@ -2,7 +2,7 @@
 
 Serviço responsável por ler, validar, transformar e indexar fontes médicas usadas no Tech
 Challenge da FIAP. Ele preserva os XMLs do MedQuAD, prepara o contrato canônico e grava
-embeddings da OpenAI no ChromaDB. Antes da deduplicação e dos splits, identificadores pessoais
+embeddings locais no ChromaDB. Antes da deduplicação e dos splits, identificadores pessoais
 diretos são auditados e redigidos de forma determinística.
 
 ## Arquitetura
@@ -29,6 +29,10 @@ tech-ingestao/
 
 A justificativa de cada camada está em
 [`docs/architecture/pragmatic-layered-architecture.md`](docs/architecture/pragmatic-layered-architecture.md).
+
+Para quem vem de Java/Spring: `models` corresponde a DTOs e tipos do domínio, `services` aos
+casos de uso, `repositories` aos contratos de persistência, `integrations` aos clients externos,
+`config/dependencies.py` a uma classe `@Configuration` e `runner.py` à entrada da aplicação.
 
 ## Requisitos
 
@@ -120,21 +124,18 @@ Para interromper o contêiner sem apagar os dados:
 docker compose stop chroma
 ```
 
-## Configurar embeddings da OpenAI
+## Embeddings locais
 
-A chave deve existir apenas no ambiente local. No PowerShell atual:
+O serviço usa `all-MiniLM-L6-v2` por ONNX Runtime, com vetores normalizados de 384 dimensões.
+Não é necessária chave da OpenAI nem chamada a outro serviço. O modelo é baixado automaticamente
+na primeira indexação e reutilizado do cache local nas execuções seguintes.
 
-```powershell
-$env:OPENAI_API_KEY = "sua-chave"
-```
-
-As demais configurações têm padrões documentados em `.env.example`. O serviço usa
-`text-embedding-3-small` com 1536 dimensões e envia os vetores prontos ao ChromaDB; o servidor
-vetorial não recebe a chave da OpenAI.
+A coleção padrão é `medquad_knowledge_minilm_v1`. O `tech-ai` usa exatamente o mesmo modelo,
+dimensão e coleção para pesquisar os documentos.
 
 ## Indexar o MedQuAD
 
-Comece com um lote pequeno para validar credencial, custo e conectividade:
+Comece com um lote pequeno para validar o download do modelo e a conectividade:
 
 ```powershell
 uv run tech-ingestao index --split train --limit 25

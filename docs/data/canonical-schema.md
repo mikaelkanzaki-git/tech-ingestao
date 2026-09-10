@@ -1,7 +1,7 @@
 # Schema canônico de dados médicos
 
 O schema `CanonicalMedicalRecord` representa um par de pergunta e resposta aceito sem acoplar
-o domínio ao XML do MedQuAD, ao formato de fine-tuning da OpenAI ou ao payload do ChromaDB.
+o domínio ao XML do MedQuAD, a um formato específico de fine-tuning ou ao payload do ChromaDB.
 A versão atual é `1.1`.
 
 O contrato executável está em

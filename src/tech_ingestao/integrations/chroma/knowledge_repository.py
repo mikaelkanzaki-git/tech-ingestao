@@ -64,7 +64,7 @@ def _normalize_metadata(value: object) -> dict[str, MetadataValue]:
 
 
 class ChromaKnowledgeRepository:
-    """Usa embeddings prontos para não acoplar o ChromaDB à OpenAI."""
+    """Usa embeddings prontos para não acoplar o banco ao runtime ONNX."""
 
     def __init__(
         self,

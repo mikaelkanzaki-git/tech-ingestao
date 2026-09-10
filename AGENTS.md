@@ -11,6 +11,8 @@ Este projeto segue uma arquitetura em camadas pragmática.
 
 O fluxo de dependências deve apontar para dentro: `runner/api -> services -> models`.
 Detalhes de XML, filesystem, ChromaDB e outros SDKs devem permanecer em `integrations/`.
+O `tech-ingestao` é o único serviço autorizado a criar ou atualizar a coleção vetorial. O
+`tech-ai` consulta essa coleção usando exatamente o mesmo contrato de embeddings.
 
 Não crie camadas ou abstrações sem responsabilidade concreta. Evite pastas genéricas como
 `utils`, `helpers`, `ports` e `adapters`; prefira nomes que expressem a responsabilidade.

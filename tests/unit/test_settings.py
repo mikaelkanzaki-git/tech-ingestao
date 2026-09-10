@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from tech_ingestao.config.settings import ChromaSettings, OpenAIEmbeddingSettings
+from tech_ingestao.config.settings import ChromaSettings, LocalEmbeddingSettings
 from tech_ingestao.errors import ConfigurationError
 
 
@@ -44,24 +44,23 @@ def test_chroma_settings_reject_invalid_values(
         ChromaSettings.from_environment(environment)
 
 
-def test_openai_settings_require_key_and_hide_it_from_repr() -> None:
-    with pytest.raises(ConfigurationError, match="OPENAI_API_KEY"):
-        OpenAIEmbeddingSettings.from_environment({})
-
-    settings = OpenAIEmbeddingSettings.from_environment(
-        {
-            "OPENAI_API_KEY": "secret-key",
-            "OPENAI_EMBEDDING_MODEL": "text-embedding-3-small",
-            "OPENAI_EMBEDDING_DIMENSIONS": "256",
-        }
+def test_local_embedding_settings_use_fixed_contract() -> None:
+    assert LocalEmbeddingSettings.from_environment({}) == LocalEmbeddingSettings(
+        model="all-MiniLM-L6-v2",
+        dimensions=384,
     )
 
-    assert settings.dimensions == 256
-    assert "secret-key" not in repr(settings)
 
-
-def test_openai_settings_reject_empty_model() -> None:
-    with pytest.raises(ConfigurationError, match="MODEL"):
-        OpenAIEmbeddingSettings.from_environment(
-            {"OPENAI_API_KEY": "secret-key", "OPENAI_EMBEDDING_MODEL": " "}
-        )
+@pytest.mark.parametrize(
+    "environment",
+    [
+        {"LOCAL_EMBEDDING_MODEL": "other-model"},
+        {"LOCAL_EMBEDDING_DIMENSIONS": "768"},
+        {"LOCAL_EMBEDDING_DIMENSIONS": "invalid"},
+    ],
+)
+def test_local_embedding_settings_reject_incompatible_contract(
+    environment: dict[str, str],
+) -> None:
+    with pytest.raises(ConfigurationError):
+        LocalEmbeddingSettings.from_environment(environment)

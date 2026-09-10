@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from tech_ingestao.errors import ConfigurationError
 
@@ -34,14 +34,16 @@ class ChromaSettings:
 
     host: str = "localhost"
     port: int = 8000
-    collection: str = "medquad_knowledge_v1"
+    collection: str = "medquad_knowledge_minilm_v1"
     ssl: bool = False
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> ChromaSettings:
         values = os.environ if environment is None else environment
         host = values.get("CHROMA_HOST", "localhost").strip()
-        collection = values.get("CHROMA_COLLECTION", "medquad_knowledge_v1").strip()
+        collection = values.get(
+            "CHROMA_COLLECTION", "medquad_knowledge_minilm_v1"
+        ).strip()
         if not host:
             raise ConfigurationError("CHROMA_HOST não pode ser vazio.")
         if not collection:
@@ -55,32 +57,29 @@ class ChromaSettings:
 
 
 @dataclass(frozen=True, slots=True)
-class OpenAIEmbeddingSettings:
-    """Credencial e contrato vetorial usados na API de embeddings."""
+class LocalEmbeddingSettings:
+    """Contrato do modelo ONNX executado localmente."""
 
-    api_key: str = field(repr=False)
-    model: str = "text-embedding-3-small"
-    dimensions: int = 1536
+    model: str = "all-MiniLM-L6-v2"
+    dimensions: int = 384
 
     @classmethod
     def from_environment(
         cls,
         environment: Mapping[str, str] | None = None,
-    ) -> OpenAIEmbeddingSettings:
+    ) -> LocalEmbeddingSettings:
         values = os.environ if environment is None else environment
-        api_key = values.get("OPENAI_API_KEY", "").strip()
-        model = values.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small").strip()
-        if not api_key:
-            raise ConfigurationError(
-                "OPENAI_API_KEY não foi definida. Configure-a apenas no ambiente local."
-            )
-        if not model:
-            raise ConfigurationError("OPENAI_EMBEDDING_MODEL não pode ser vazio.")
-        return cls(
-            api_key=api_key,
-            model=model,
-            dimensions=_positive_integer(
-                values.get("OPENAI_EMBEDDING_DIMENSIONS", "1536"),
-                "OPENAI_EMBEDDING_DIMENSIONS",
-            ),
+        model = values.get("LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2").strip()
+        dimensions = _positive_integer(
+            values.get("LOCAL_EMBEDDING_DIMENSIONS", "384"),
+            "LOCAL_EMBEDDING_DIMENSIONS",
         )
+        if model != "all-MiniLM-L6-v2":
+            raise ConfigurationError(
+                "LOCAL_EMBEDDING_MODEL deve ser 'all-MiniLM-L6-v2' nesta versão."
+            )
+        if dimensions != 384:
+            raise ConfigurationError(
+                "LOCAL_EMBEDDING_DIMENSIONS deve ser 384 para all-MiniLM-L6-v2."
+            )
+        return cls(model=model, dimensions=dimensions)
