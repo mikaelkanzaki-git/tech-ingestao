@@ -37,6 +37,7 @@ src/tech_ingestao/
 ├── services/
 │   ├── canonicalization_service.py
 │   ├── dataset_preparation_service.py
+│   ├── knowledge_chunking_service.py
 │   ├── knowledge_index_service.py
 │   └── scan_service.py
 └── integrations/
@@ -64,11 +65,13 @@ src/tech_ingestao/
 - `models/canonical.py`: define o contrato estável consumido pelas próximas etapas.
 - `services/canonicalization_service.py`: traduz o formato MedQuAD para o schema canônico.
 - `services/dataset_preparation_service.py`: deduplica, divide e audita o dataset canônico.
-- `services/knowledge_index_service.py`: formata o texto recuperável, coordena lotes e busca.
+- `services/knowledge_chunking_service.py`: formata e divide textos extensos dentro da janela
+  útil do embedding, preservando IDs estáveis e procedência.
+- `services/knowledge_index_service.py`: coordena embeddings, lotes, persistência e busca.
 - `repositories/knowledge_repository.py`: contrato de persistência vetorial consumido pelo
   serviço, sem expor o SDK.
-- `integrations/chroma/knowledge_repository.py`: implementa `upsert`, consulta e contagem pelo
-  cliente HTTP do ChromaDB.
+- `integrations/chroma/knowledge_repository.py`: implementa `upsert`, consulta e contagem pelos
+  clientes do ChromaDB local ou Chroma Cloud.
 - `integrations/embeddings/client.py`: contrato substituível consumido pelos casos de uso.
 - `integrations/embeddings/local_onnx.py`: executa `all-MiniLM-L6-v2` localmente; o banco não
   conhece o runtime usado para gerar o vetor.

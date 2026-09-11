@@ -39,12 +39,16 @@ class KnowledgeIndexSummary:
     """Evidência da execução idempotente dos lotes."""
 
     indexed_records: int
+    indexed_documents: int
+    chunked_records: int
     batches: int
     collection_records: int
 
     def as_dict(self) -> dict[str, int]:
         return {
             "indexed_records": self.indexed_records,
+            "indexed_documents": self.indexed_documents,
+            "chunked_records": self.chunked_records,
             "batches": self.batches,
             "collection_records": self.collection_records,
         }

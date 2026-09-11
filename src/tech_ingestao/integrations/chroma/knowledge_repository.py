@@ -76,11 +76,21 @@ class ChromaKnowledgeRepository:
             self._collection = collection
             return
         try:
-            client = chromadb.HttpClient(
-                host=settings.host,
-                port=settings.port,
-                ssl=settings.ssl,
-            )
+            if settings.mode == "cloud":
+                client = chromadb.CloudClient(
+                    tenant=settings.tenant,
+                    database=settings.database,
+                    api_key=settings.api_key,
+                    cloud_host=settings.host,
+                    cloud_port=settings.port,
+                    enable_ssl=settings.ssl,
+                )
+            else:
+                client = chromadb.HttpClient(
+                    host=settings.host,
+                    port=settings.port,
+                    ssl=settings.ssl,
+                )
             chroma_collection = client.get_or_create_collection(
                 name=settings.collection,
                 embedding_function=None,

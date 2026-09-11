@@ -3,53 +3,20 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 from tech_ingestao.errors import KnowledgeIndexError
 from tech_ingestao.integrations.embeddings.client import EmbeddingClient
-from tech_ingestao.models.canonical import CanonicalMedicalRecord
 from tech_ingestao.models.knowledge import (
-    KnowledgeDocument,
     KnowledgeIndexSummary,
     KnowledgeSearchResult,
-    MetadataValue,
 )
 from tech_ingestao.repositories.knowledge_repository import KnowledgeRepository
+from tech_ingestao.services.knowledge_chunking_service import build_knowledge_documents
 
-
-def _metadata(record: CanonicalMedicalRecord, split: str) -> dict[str, MetadataValue]:
-    source = record.source
-    values: dict[str, MetadataValue | None] = {
-        "schema_version": record.schema_version,
-        "document_id": record.document_id,
-        "content_sha256": record.content_sha256,
-        "language": record.language,
-        "focus": record.focus,
-        "category": record.category,
-        "question_type": record.question_type,
-        "dataset": source.dataset,
-        "collection": source.collection,
-        "relative_path": source.relative_path,
-        "upstream_revision": source.upstream_revision,
-        "publisher": source.publisher,
-        "source_url": source.url,
-        "license": source.license,
-        "split": split,
-    }
-    return {key: value for key, value in values.items() if value is not None}
-
-
-def build_knowledge_document(record: CanonicalMedicalRecord, *, split: str) -> KnowledgeDocument:
-    """Converte o registro canônico sem carregar estruturas aninhadas no ChromaDB."""
-
-    sections = []
-    if record.focus:
-        sections.append(f"Medical topic: {record.focus}")
-    sections.extend((f"Question: {record.question}", f"Answer: {record.answer}"))
-    return KnowledgeDocument(
-        record_id=record.record_id,
-        text="\n".join(sections),
-        metadata=_metadata(record, split),
-    )
+if TYPE_CHECKING:
+    from tech_ingestao.models.canonical import CanonicalMedicalRecord
+    from tech_ingestao.models.knowledge import KnowledgeDocument
 
 
 def _batches(
@@ -81,7 +48,17 @@ class KnowledgeIndexService:
         if batch_size <= 0:
             raise KnowledgeIndexError("batch_size deve ser maior que zero.")
 
-        documents = tuple(build_knowledge_document(record, split=split) for record in records)
+        try:
+            documents_by_record = tuple(
+                build_knowledge_documents(record, split=split) for record in records
+            )
+        except ValueError as error:
+            raise KnowledgeIndexError(
+                "Um registro não pôde ser dividido nos limites seguros de indexação."
+            ) from error
+        documents = tuple(
+            document for record_documents in documents_by_record for document in record_documents
+        )
         batch_count = 0
         for batch in _batches(documents, batch_size):
             embeddings = self._embedding_service.embed([document.text for document in batch])
@@ -93,7 +70,11 @@ class KnowledgeIndexService:
             batch_count += 1
 
         return KnowledgeIndexSummary(
-            indexed_records=len(documents),
+            indexed_records=len(records),
+            indexed_documents=len(documents),
+            chunked_records=sum(
+                len(record_documents) > 1 for record_documents in documents_by_record
+            ),
             batches=batch_count,
             collection_records=self._repository.count(),
         )

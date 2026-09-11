@@ -7,13 +7,16 @@ import pytest
 from tech_ingestao.errors import KnowledgeIndexError
 from tech_ingestao.models.canonical import CanonicalMedicalRecord, CanonicalSource
 from tech_ingestao.models.knowledge import KnowledgeDocument, KnowledgeSearchResult
-from tech_ingestao.services.knowledge_index_service import (
-    KnowledgeIndexService,
-    build_knowledge_document,
-)
+from tech_ingestao.services.knowledge_chunking_service import build_knowledge_document
+from tech_ingestao.services.knowledge_index_service import KnowledgeIndexService
 
 
-def _record(index: int = 1, *, focus: str | None = "Diabetes") -> CanonicalMedicalRecord:
+def _record(
+    index: int = 1,
+    *,
+    focus: str | None = "Diabetes",
+    answer: str | None = None,
+) -> CanonicalMedicalRecord:
     return CanonicalMedicalRecord(
         record_id=f"record-{index}",
         document_id=f"document-{index}",
@@ -23,7 +26,7 @@ def _record(index: int = 1, *, focus: str | None = "Diabetes") -> CanonicalMedic
         category=None,
         question_type="symptoms",
         question=f"Question {index}?",
-        answer=f"Answer {index}.",
+        answer=answer or f"Answer {index}.",
         synonyms=(),
         umls_cuis=(),
         umls_semantic_types=(),
@@ -111,11 +114,28 @@ def test_index_batches_records_and_returns_collection_count() -> None:
 
     assert summary.as_dict() == {
         "indexed_records": 3,
+        "indexed_documents": 3,
+        "chunked_records": 0,
         "batches": 2,
         "collection_records": 3,
     }
     assert [len(batch) for batch, _ in repository.upserts] == [2, 1]
     assert [len(call) for call in embeddings.calls] == [2, 1]
+
+
+def test_index_batches_generated_chunks_instead_of_only_parent_records() -> None:
+    embeddings = FakeEmbeddingService()
+    repository = FakeKnowledgeRepository()
+    service = KnowledgeIndexService(embeddings, repository)
+    long_answer = " ".join(f"Sentence {index}." for index in range(300))
+
+    summary = service.index([_record(answer=long_answer)], split="train", batch_size=2)
+
+    assert summary.indexed_records == 1
+    assert summary.indexed_documents > 1
+    assert summary.chunked_records == 1
+    assert summary.batches == (summary.indexed_documents + 1) // 2
+    assert sum(len(batch) for batch, _ in repository.upserts) == summary.indexed_documents
 
 
 def test_index_rejects_invalid_batch_and_mismatched_embeddings() -> None:

@@ -26,6 +26,29 @@ def test_chroma_settings_use_defaults_and_parse_values() -> None:
     )
 
 
+def test_chroma_settings_parse_cloud_connection_without_exposing_api_key() -> None:
+    configured = ChromaSettings.from_environment(
+        {
+            "CHROMA_MODE": " CLOUD ",
+            "CHROMA_API_KEY": "secret-value",
+            "CHROMA_TENANT": "tenant-id",
+            "CHROMA_DATABASE": "medical-database",
+        }
+    )
+
+    assert configured == ChromaSettings(
+        mode="cloud",
+        host="api.trychroma.com",
+        port=443,
+        collection="medquad_knowledge_minilm_v1",
+        ssl=True,
+        api_key="secret-value",
+        tenant="tenant-id",
+        database="medical-database",
+    )
+    assert "secret-value" not in repr(configured)
+
+
 @pytest.mark.parametrize(
     ("environment", "message"),
     [
@@ -34,6 +57,16 @@ def test_chroma_settings_use_defaults_and_parse_values() -> None:
         ({"CHROMA_SSL": "maybe"}, "true ou false"),
         ({"CHROMA_HOST": " "}, "HOST"),
         ({"CHROMA_COLLECTION": " "}, "COLLECTION"),
+        ({"CHROMA_MODE": "remote"}, "MODE"),
+        ({"CHROMA_MODE": "cloud"}, "CHROMA_API_KEY"),
+        (
+            {
+                "CHROMA_MODE": "cloud",
+                "CHROMA_API_KEY": "api-key",
+                "CHROMA_TENANT": "tenant-id",
+            },
+            "CHROMA_DATABASE",
+        ),
     ],
 )
 def test_chroma_settings_reject_invalid_values(
